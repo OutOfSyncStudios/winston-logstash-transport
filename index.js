@@ -206,6 +206,11 @@ class LogstashTransport extends Transport {
     this.socket = dgram.createSocket(this.mode);
     this.socket.on('error', () => {
       // Do nothing
+      if (!(/ECONNREFUSED/).test(err.message)) {
+        setImmediate(() => {
+          this.emit('error', err);
+        });
+      }
     });
 
     this.socket.on('close', () => {
@@ -215,7 +220,7 @@ class LogstashTransport extends Transport {
     if (this.socket.unref) {
       this.socket.unref();
     }
-    this.connectionState = 'CONNECTED';
+    this.announce();
   }
 
   connect() {
