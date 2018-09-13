@@ -1,0 +1,49 @@
+{
+  "name": "winston-logstash-transport",
+  "version": "1.0.0",
+  "description": "A winston@3 replacement for winston-logstash and winston-logstash-udp",
+  "main": "index.js",
+  "scripts": {
+    "test": "nyc mocha --exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chronosis/winston-logstash-transport.git"
+  },
+  "keywords": [
+    "winston",
+    "winston@3",
+    "logstash",
+    "tcp",
+    "udp",
+    "transport",
+    "winston-transport",
+    "logging"
+  ],
+  "author": "Chronosis",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chronosis/winston-logstash-transport/issues"
+  },
+  "homepage": "https://github.com/chronosis/winston-logstash-transport#readme",
+  "devDependencies": {
+    "ajv": "^6.5.3",
+    "chai": "^4.1.2",
+    "codacy-coverage": "^3.0.0",
+    "eslint": "^5.5.0",
+    "gulp": "^4.0.0",
+    "gulp-eslint": "^5.0.0",
+    "gulp-jsdoc3": "^2.0.0",
+    "gulp-mocha": "^6.0.0",
+    "gulp-prettier": "^2.0.0",
+    "husky": "^1.0.0-rc.14",
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.1",
+    "prettier": "^1.14.2",
+    "winston": "^3.1.0"
+  },
+  "dependencies": {
+    "@mediaxpost/lodashext": "^1.2.0",
+    "winston-transport": "^4.2.0"
+  }
+}
