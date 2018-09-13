@@ -40,6 +40,9 @@ class LogstashTransport extends Transport {
       this[key] = value;
     });
 
+    if (this.mode === 'tcp') { this.mode = 'tcp4'; }
+    if (this.mode === 'udp') { this.mode = 'udp4'; }
+
     // Connection state
     this.logQueue = [];
     this.connectionState = 'NOT CONNECTED';
@@ -108,7 +111,7 @@ class LogstashTransport extends Transport {
     const output = JSON.stringify(message);
     switch (this.mode) {
       case 'tcp6':
-      case 'tcp': {
+      case 'tcp4': {
         this.deliverTCP(output, callback);
         break;
       }
@@ -228,7 +231,7 @@ class LogstashTransport extends Transport {
       this.connectionState = 'CONNECTING';
       switch (this.mode) {
         case 'tcp6':
-        case 'tcp': {
+        case 'tcp4': {
           this.connectTCP();
           break;
         }
@@ -259,7 +262,7 @@ class LogstashTransport extends Transport {
       this.connectionState = 'TERMINATING';
       switch (this.mode) {
         case 'tcp6':
-        case 'tcp': {
+        case 'tcp4': {
           this.closeTCP();
           break;
         }
