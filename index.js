@@ -1,48 +1,50 @@
+const __ = require('lodash');
 const Transport = require('winston-transport');
-const util = require('util');
-const tls = require('tls');
-const dgram = require('dgram');
-const net = require('net');
-const os = require('os');
-const fs = require('fs');
 
-var ECONNREFUSED_REGEXP = /ECONNREFUSED/;
+const os = require('os');
+const dgram = require('dgram');
+const tls = require('tls');
+const net = require('net');
+const fs = require('fs');
 
 class LogstashTransport extends Transport {
   constructor(options) {
-    options = options || {};
+    const defaults = {
+      name: 'logstashTransport',
+      mode: 'udp4',
+      localhost: os.hostname(),
+      host: '127.0.0.1',
+      port: 28777,
+      applicationName: process.title,
+      pid: process.pid,
+      silent: false,
+      maxConnectRetries: 4,
+      timeoutConnectRetries: 100,
+      logstash: false,
+      sslEnable: false,
+      sslKey: '',
+      sslCert: '',
+      sslCA: '',
+      sslPassPhrase: '',
+      rejectUnauthorized: false,
+      lable: process.title,
+      trailingLineFeed: false,
+      trailingLineFeedChar: os.EOL
+    };
+
+    options = __.merge(defaults, options);
     super(options);
 
-    this.name = 'logstashTransport';
-    this.mode = options.mode || 'udp4';
-    this.localhost = options.localhost || os.hostname();
-    this.host = options.host || '127.0.0.1';
-    this.port = options.port || 28777;
-    this.node_name = options.node_name || process.title;
-    this.pid = options.pid || process.pid;
-    this.silent = options.silent || false;
-    this.max_connect_retries = (typeof options.max_connect_retries === 'number') ? options.max_connect_retries : 4;
-    this.timeout_connect_retries = (typeof options.timeout_connect_retries === 'number') ? options.timeout_connect_retries : 100;
-    this.logstash = options.logstash || false;
-
-    // TCP / TLS Settings
-    this.ssl_enable = options.ssl_enable || false;
-    this.ssl_key = options.ssl_key || '';
-    this.ssl_cert = options.ssl_cert || '';
-    this.ca = options.ca || '';
-    this.ssl_passphrase = options.ssl_passphrase || '';
-    this.rejectUnauthorized = options.rejectUnauthorized === true;
+    // Assign all options to local properties
+    __.forEach(options, (value, key) => {
+      this[key] = value;
+    });
 
     // Connection state
-    this.log_queue = [];
-    this.connected = false;
+    this.logQueue = [];
+    this.connectionState = 'NOT CONNECTED';
     this.socket = null;
     this.retries = -1;
-
-    // Miscellaneous options
-    this.label = options.label || this.node_name;
-    this.trailingLineFeed = options.trailingLineFeed === true;
-    this.trailingLineFeedChar = options.trailingLineFeedChar || os.EOL;    
 
     this.connect();
   }
@@ -53,29 +55,151 @@ class LogstashTransport extends Transport {
       return;
     }
 
-    console.log(info.level);
-    console.log(info.message);
+    const output = {
+      level: info.level,
+      message: info.message,
+      timestamp: new Date().toISOString(),
+      meta: {
+        application: this.applicationName,
+        serverName: this.localhost,
+        pid: this.pid
+      }
+    };
 
-    setImmediate(() => {
-      this.emit('logged', info);
-    });
+    if (this.connectionState !== 'CONNECTED') {
+      this.logQueue.push({
+        message: output,
+        callback: ((err) => {
+          this.emit('logged', info);
+          callback(err, !err);
+        })
+      });
+    } else {
+      setImmediate(() => {
+        this.deliver(output, (err) => {
+          this.emit('logged', info);
+          callback(err, !err);
+        });
+      });
+    }
 
-    // Send some shit to the connection
-
-    callback();
     return;
   }
 
   deliverTCP(message, callback) {
+    callback = callback || (() => {});
 
+    this.socket.write(`${message}\n`, undefined, callback);
   }
 
   deliverUDP(message, callback) {
+    callback = callback || (() => {});
 
+    if (this.trailingLineFeed) {
+      message = message.replace(/\s+$/, '') + this.trailingLineFeedChar;
+    }
+
+    const buff = Buffer.from(message);
+
+    this.socket.send(buff, 0, buff.length, this.port, this.host, callback);
+  }
+
+  deliver(message, callback) {
+    const output = JSON.stringify(message);
+    switch (this.mode) {
+      case 'tcp6':
+      case 'tcp': {
+        this.deliverTCP(output, callback);
+        break;
+      }
+      case 'udp6':
+      case 'udp4':
+      default: {
+        this.deliverUDP(output, callback);
+        break;
+      }
+    }
   }
 
   connectTCP() {
+    const options = {
+      host: this.host,
+      port: this.port
+    };
 
+    if (this.sslEnable) {
+      options.key = this.sslKey ? fs.readFileSync(this.sslKey) : null;
+      options.cert = this.sslCert ? fs.readFileSync(this.sslCert) : null;
+      options.passphrase = this.sslPassPhrase || null;
+      options.rejectUnauthorized = (this.rejectUnauthorized === true);
+
+      if (this.ca) {
+        options.ca = [];
+        __.forEach(this.ca, (value) => {
+          options.ca.push(fs.readFileSync(value));
+        });
+      }
+
+      this.socket = tls.connect(options, () => {
+        this.socket.setEncoding('UTF-8');
+        this.announce();
+        this.connectionState = 'CONNECTED';
+      });
+    } else {
+      this.socket = new net.Socket();
+      this.socket.connect(options, () => {
+        this.socket.setKeepAlive(true, 60000);
+        this.announce();
+        this.connectionState = 'CONNECTED';
+      });
+    }
+    this.hookTCPSocketEvents();
+  }
+
+  hookTCPSocketEvents() {
+    this.socket.on('error', (err) => {
+      this.connectionState = 'NOT CONNECTED';
+
+      if (this.socket && typeof (this.socket) !== 'undefined') {
+        this.socket.destroy();
+      }
+      this.socket = null;
+
+      if (!(/ECONNREFUSED/).test(err.message)) {
+        setImmediate(() => {
+          this.emit('error', err);
+        });
+      }
+    });
+
+    this.socket.on('timeout', () => {
+      if (this.socket.readyState !== 'open') {
+        this.socket.destroy();
+      }
+    });
+
+    this.socket.on('connect', () => {
+      this.connectionState = 'CONNECTED';
+      this.retries = 0;
+    });
+
+    this.socket.on('close', () => {
+      if (this.connectionState === 'TERMINATING') {
+        return;
+      }
+
+      if (this.maxConnectRetries >= 0 && this.retries >= this.maxConnectRetries) {
+        this.logQueue = [];
+        this.silent = true;
+        setImmediate(() => {
+          this.emit('error', new Error('Max retries reached, placing transport in OFFLINE/silent mode.'));
+        });
+      } else if (this.connectionState !== 'CONNECTING') {
+        setTimeout(() => {
+          this.connect();
+        }, this.timeoutConnectRetries);
+      }
+    });
   }
 
   connectUDP() {
@@ -84,32 +208,85 @@ class LogstashTransport extends Transport {
       // Do nothing
     });
 
+    this.socket.on('close', () => {
+      this.connectionState = 'NOT CONNECTED';
+    });
+
     if (this.socket.unref) {
       this.socket.unref();
     }
-    this.connected = true;
+    this.connectionState = 'CONNECTED';
   }
 
   connect() {
-    switch (this.mode) {
-      case 'tcp6':
-      case 'tcp': {
-        this.connectTCP();
-        break;
-      }
-      case 'udp6':
-      case 'udp4':
-      default: {
-        this.connectUDP();
-        break;
+    if (this.connectionState !== 'CONNECTED') {
+      this.connectionState = 'CONNECTING';
+      switch (this.mode) {
+        case 'tcp6':
+        case 'tcp': {
+          this.connectTCP();
+          break;
+        }
+        case 'udp6':
+        case 'udp4':
+        default: {
+          this.connectUDP();
+          break;
+        }
       }
     }
   }
 
-  close() {
-    this.connected = false;
-    this.socket.close();
+  closeTCP() {
+    this.socket.end();
+    this.socket.destroy();
+    this.socket = null;
+    this.connectionState = 'NOT CONNECTED';
   }
-};
+
+  closeUDP() {
+    this.socket.close();
+    this.connectionState = 'NOT CONNECTED';
+  }
+
+  close() {
+    if (this.connectionState === 'CONNECTED' && this.socket) {
+      this.connectionState = 'TERMINATING';
+      switch (this.mode) {
+        case 'tcp6':
+        case 'tcp': {
+          this.closeTCP();
+          break;
+        }
+        case 'udp6':
+        case 'udp4':
+        default: {
+          this.closeUDP();
+          break;
+        }
+      }
+    }
+  }
+
+  flush() {
+    while (this.logQueue.length > 0) {
+      const elem = this.logQueue.shift();
+      this.deliver(elem.message, elem.callback);
+    }
+  }
+
+  announce() {
+    this.flush();
+    if (this.connectionState === 'TERMINATING') {
+      this.close();
+    } else {
+      this.connectionState = 'CONNECTED';
+    }
+  }
+
+  getQueueLength() {
+    return this.logQueue.length;
+  }
+}
 
 module.exports = LogstashTransport;
