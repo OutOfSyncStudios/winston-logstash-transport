@@ -45,12 +45,12 @@ Create a new Logstash Transport
 | `silent` | boolean | Offline/Silent mode enabled |  | `false` | ✔️ | ✔️ |
 | `maxConnectRetries` | integer | The number of attempts to reconnect to make before erroring out | Any integer | `4` | ✔️ | ✔️ |
 | `timeoutConnectRetries` | integer | The number of milliseconds to wait between connection attempts | Any integer | `100` | ✔️ | ✔️ |
-| `label` | string | ... | ... | `process.title` | ✔️ | ✔️ |
+| `label` | string | The LogStash label to send with the information | Any | `process.title` | ✔️ | ✔️ |
 | `sslEnable` | boolean | Whether SSL/TLS connection should be attempted when connecting via TCP |  | `false` | ✔️ |  |
 | `sslKey` | filepath | The filepath to the SSL Key | Any valid filepath | `''` | ✔️ |  |
 | `sslCert` | filepath | The filepath to the SSL Cert | Any valid filepath | `''` | ✔️ |  |
 | `sslCA` | filepath or Array(filepaths) | The filepath(s) to the Certificat Authority (CA) Intermediary Certs | Any valid filepath(s) | `''` | ✔️ |  |
 | `sslPassPhrase` | string | The SSL Cert PassPhrase (if any) | Any | `''` | ✔️ |  |
-| `rejectUnauthorized` | boolean | ... | ... | `false` | ✔️ |  |
-| `trailingLineFeed` | boolean | ... | ... | `false` |  | ✔️ |
-| `trailingLineFeedChar` | string | ... | ... | `null` |  | ✔️ |
+| `rejectUnauthorized` | boolean | Enable connection rejection when cert is not valid |  | `false` | ✔️ |  |
+| `trailingLineFeed` | boolean | Enable appending end of line character to UDP output |  | `false` |  | ✔️ |
+| `trailingLineFeedChar` | string | The type of end of line character(s) to append to UDP output | Any | `os.EOL` |  | ✔️ |
