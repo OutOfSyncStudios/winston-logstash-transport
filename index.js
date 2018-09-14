@@ -10,7 +10,6 @@ const fs = require('fs');
 class LogstashTransport extends Transport {
   constructor(options) {
     const defaults = {
-      name: 'logstashTransport',
       mode: 'udp4',
       localhost: os.hostname(),
       host: '127.0.0.1',
@@ -20,14 +19,13 @@ class LogstashTransport extends Transport {
       silent: false,
       maxConnectRetries: 4,
       timeoutConnectRetries: 100,
-      logstash: false,
       sslEnable: false,
       sslKey: '',
       sslCert: '',
       sslCA: '',
       sslPassPhrase: '',
       rejectUnauthorized: false,
-      lable: process.title,
+      label: process.title,
       trailingLineFeed: false,
       trailingLineFeedChar: os.EOL
     };
@@ -39,6 +37,7 @@ class LogstashTransport extends Transport {
     __.forEach(options, (value, key) => {
       this[key] = value;
     });
+    this.name = 'logstashTransport';
 
     if (this.mode === 'tcp') { this.mode = 'tcp4'; }
     if (this.mode === 'udp') { this.mode = 'udp4'; }
@@ -62,13 +61,16 @@ class LogstashTransport extends Transport {
     }
 
     const output = {
-      level: info.level,
-      message: info.message,
-      timestamp: new Date().toISOString(),
-      meta: {
-        application: this.applicationName,
-        serverName: this.localhost,
-        pid: this.pid
+      '@timestamp': new Date().toISOString(),
+      '@message': info.message,
+      '@fields': {
+        level: info.level,
+        label: this.label,
+        meta: {
+          application: this.applicationName,
+          serverName: this.localhost,
+          pid: this.pid
+        }
       }
     };
 

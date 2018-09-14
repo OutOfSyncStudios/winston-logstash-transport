@@ -18,7 +18,9 @@
     "udp",
     "transport",
     "winston-transport",
-    "logging"
+    "logging",
+    "winston-logstash",
+    "winston-logstash-udp"
   ],
   "author": "Chronosis",
   "license": "MIT",
