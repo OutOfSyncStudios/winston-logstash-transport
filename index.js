@@ -42,6 +42,9 @@ class LogstashTransport extends Transport {
 
     if (this.mode === 'tcp') { this.mode = 'tcp4'; }
     if (this.mode === 'udp') { this.mode = 'udp4'; }
+    if (this.mode.substr(3,4) === '6' && this.host === '127.0.0.1') {
+      this.host = '::0';
+    }
 
     // Connection state
     this.logQueue = [];

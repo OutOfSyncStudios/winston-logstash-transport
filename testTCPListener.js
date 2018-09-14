@@ -9,4 +9,5 @@ const server = new net.createServer((socket) => {
   });
 });
 
+//server.listen(28777, '::0');
 server.listen(28777, '127.0.0.1');
