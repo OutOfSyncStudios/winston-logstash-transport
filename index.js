@@ -214,7 +214,7 @@ class LogstashTransport extends Transport {
   }
 
   connectUDP() {
-    this.socket = dgram.createSocket(this.mode);
+    this.socket = dgram.createSocket(this.mode, { sendBufferSize: 60000 });
     this.socket.on('error', () => {
       // Do nothing
       if (!(/ECONNREFUSED/).test(err.message)) {
