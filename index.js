@@ -27,8 +27,11 @@ class LogstashTransport extends Transport {
       rejectUnauthorized: false,
       label: process.title,
       trailingLineFeed: false,
-      trailingLineFeedChar: os.EOL
+      trailingLineFeedChar: os.EOL,
+      level: 'info'
     };
+
+    options.applicationName = options.applicationName || options.appName || process.title;
 
     options = __.merge(defaults, options);
     super(options);
@@ -48,6 +51,7 @@ class LogstashTransport extends Transport {
     // Connection state
     this.logQueue = [];
     this.connectionState = 'NOT CONNECTED';
+    this.socketmode = null;
     this.socket = null;
     this.retries = -1;
 
@@ -97,15 +101,11 @@ class LogstashTransport extends Transport {
   deliverTCP(message, callback) {
     callback = callback || (() => {});
 
-    this.socket.write(`${message}\n`, undefined, callback);
+    this.socket.write(message, undefined, callback);
   }
 
   deliverUDP(message, callback) {
     callback = callback || (() => {});
-
-    if (this.trailingLineFeed) {
-      message = message.replace(/\s+$/, '') + this.trailingLineFeedChar;
-    }
 
     const buff = Buffer.from(message);
 
@@ -114,7 +114,10 @@ class LogstashTransport extends Transport {
 
   deliver(message, callback) {
     const output = JSON.stringify(message);
-    switch (this.mode) {
+    if (this.trailingLineFeed) {
+      message = message.replace(/\s+$/, '') + this.trailingLineFeedChar;
+    }
+    switch (this.socketmode) {
       case 'tcp6':
       case 'tcp4': {
         this.deliverTCP(output, callback);
@@ -156,7 +159,7 @@ class LogstashTransport extends Transport {
     } else {
       this.socket = new net.Socket();
       this.socket.connect(options, () => {
-        this.socket.setKeepAlive(true, 60000);
+        this.socket.setKeepAlive(true, 60 * 1000);
         this.announce();
         this.connectionState = 'CONNECTED';
       });
@@ -233,6 +236,7 @@ class LogstashTransport extends Transport {
 
   connect() {
     if (this.connectionState !== 'CONNECTED') {
+      this.socketmode = this.mode;
       this.connectionState = 'CONNECTING';
       switch (this.mode) {
         case 'tcp6':
@@ -265,7 +269,7 @@ class LogstashTransport extends Transport {
   close() {
     if (this.connectionState === 'CONNECTED' && this.socket) {
       this.connectionState = 'TERMINATING';
-      switch (this.mode) {
+      switch (this.socketmode) {
         case 'tcp6':
         case 'tcp4': {
           this.closeTCP();
@@ -278,6 +282,7 @@ class LogstashTransport extends Transport {
           break;
         }
       }
+      this.socketmode = null;
     }
   }
 
