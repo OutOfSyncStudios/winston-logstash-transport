@@ -64,35 +64,51 @@ class LogstashTransport extends Transport {
       return;
     }
 
-    const output = {
-      '@timestamp': new Date().toISOString(),
-      '@message': info.message,
-      '@fields': {
+    if (info.message) {
+      if (typeof info.message !== 'object') {
+        const strData = info.message;
+        info.message = { data: strData };
+      }
+
+      let msg;
+      try {
+        msg = JSON.stringify(info.message);
+      } catch (err) {
+        msg = util.inspect(info.message, { depth: null });
+      }
+
+      const output = {
+        timestamp: new Date().toISOString(),
+        message: msg,
         level: info.level,
         label: this.label,
-        meta: {
-          application: this.applicationName,
-          serverName: this.localhost,
-          pid: this.pid
-        }
-      }
-    };
+        application: this.applicationName,
+        serverName: this.localhost,
+        pid: this.pid
+      };
 
-    if (this.connectionState !== 'CONNECTED') {
-      this.logQueue.push({
-        message: output,
-        callback: ((err) => {
-          this.emit('logged', info);
-          callback(err, !err);
-        })
-      });
-    } else {
-      setImmediate(() => {
-        this.deliver(output, (err) => {
-          this.emit('logged', info);
-          callback(err, !err);
+      if (this.connectionState !== 'CONNECTED') {
+        this.logQueue.push({
+          message: output,
+          callback: ((err) => {
+            this.emit('logged', info);
+            callback();
+            // callback(err, !err);
+          })
         });
-      });
+      } else {
+        setImmediate(() => {
+          try {
+            this.deliver(output, (err) => {
+              this.emit('logged', info);
+              callback();
+              // callback(err, !err);
+            });
+          } catch (err) {
+            callback();
+          }
+        });
+      }
     }
 
     return;
@@ -113,9 +129,9 @@ class LogstashTransport extends Transport {
   }
 
   deliver(message, callback) {
-    const output = JSON.stringify(message);
+    let output = JSON.stringify(message);
     if (this.trailingLineFeed) {
-      message = message.replace(/\s+$/, '') + this.trailingLineFeedChar;
+      output = output.replace(/\s+$/, '') + this.trailingLineFeedChar;
     }
     switch (this.socketmode) {
       case 'tcp6':
@@ -176,11 +192,16 @@ class LogstashTransport extends Transport {
       }
       this.socket = null;
 
-      if (!(/ECONNREFUSED/).test(err.message)) {
-        setImmediate(() => {
-          this.emit('error', err);
-        });
-      }
+      this.emit('close');
+      // if (!(/ECONNREFUSED/).test(err.message) && !(/socket has been ended/).test(err.message)) {
+      //   this.emit('close');
+      //   console.log(err);
+      //   // setImmediate(() => {
+      //   //   this.emit('error', err);
+      //   // });
+      // } else {
+      //   this.emit('close');
+      // }
     });
 
     this.socket.on('timeout', () => {
@@ -202,9 +223,10 @@ class LogstashTransport extends Transport {
       if (this.maxConnectRetries >= 0 && this.retries >= this.maxConnectRetries) {
         this.logQueue = [];
         this.silent = true;
-        setImmediate(() => {
-          this.emit('error', new Error('Max retries reached, placing transport in OFFLINE/silent mode.'));
-        });
+        console.error('Max retries reached, placing transport in OFFLINE/silent mode.');
+        // setImmediate(() => {
+        //   this.emit('error', new Error('Max retries reached, placing transport in OFFLINE/silent mode.'));
+        // });
       } else if (this.connectionState !== 'CONNECTING') {
         setTimeout(() => {
           this.connect();
@@ -218,9 +240,10 @@ class LogstashTransport extends Transport {
     this.socket.on('error', (err) => {
       // Do nothing
       if (!(/ECONNREFUSED/).test(err.message)) {
-        setImmediate(() => {
-          this.emit('error', err);
-        });
+        console.error(err);
+        // setImmediate(() => {
+        //   this.emit('error', err);
+        // });
       }
     });
 
