@@ -12,7 +12,7 @@
   },
   "publishConfig": {
     "access": "public"
-  },  
+  },
   "keywords": [
     "winston",
     "winston@3",
