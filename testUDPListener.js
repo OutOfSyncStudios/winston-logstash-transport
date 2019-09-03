@@ -1,5 +1,3 @@
-const __ = require('lodash');
-
 const dgram = require('dgram');
 
 const socket = dgram.createSocket('udp4');

@@ -1,4 +1,4 @@
-const __ = require('lodash');
+const __ = require('@outofsync/lodash-ex');
 const Transport = require('winston-transport');
 
 const os = require('os');
@@ -31,8 +31,8 @@ class LogstashTransport extends Transport {
       level: 'info'
     };
 
+    options = options || {};
     options.applicationName = options.applicationName || options.appName || process.title;
-
     options = __.merge(defaults, options);
     super(options);
 
@@ -44,7 +44,7 @@ class LogstashTransport extends Transport {
 
     if (this.mode === 'tcp') { this.mode = 'tcp4'; }
     if (this.mode === 'udp') { this.mode = 'udp4'; }
-    if (this.mode.substr(3,4) === '6' && this.host === '127.0.0.1') {
+    if (this.mode.substr(3, 4) === '6' && this.host === '127.0.0.1') {
       this.host = '::0';
     }
 
@@ -215,7 +215,7 @@ class LogstashTransport extends Transport {
 
   connectUDP() {
     this.socket = dgram.createSocket(this.mode, { sendBufferSize: 60000 });
-    this.socket.on('error', () => {
+    this.socket.on('error', (err) => {
       // Do nothing
       if (!(/ECONNREFUSED/).test(err.message)) {
         setImmediate(() => {

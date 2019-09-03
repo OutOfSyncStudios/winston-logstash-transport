@@ -12,7 +12,7 @@ a single transport-layer protocol.
 
 ```js
 const Winston = require('winston');
-const WinstonLogStash = require('winston-logstash-transport');
+const WinstonLogStash = require('winston3-logstash-transport');
 
 const logger = Winston.createLogger();
 
@@ -54,3 +54,9 @@ Create a new Logstash Transport
 | `rejectUnauthorized` | boolean | Enable connection rejection when cert is not valid |  | `false` | ✔️ |  |
 | `trailingLineFeed` | boolean | Enable appending end of line character to UDP output |  | `false` |  | ✔️ |
 | `trailingLineFeedChar` | string | The type of end of line character(s) to append to UDP output | Any | `os.EOL` |  | ✔️ |
+
+## [License](#license)
+<a name="license"></a>
+
+Copyright (c) 2018, 2019 Jay Reardon
+Copyright (c) 2019 Out of Sync Studios LLC -- Licensed under the MIT license.
