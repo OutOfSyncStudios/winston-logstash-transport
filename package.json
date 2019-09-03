@@ -4,7 +4,12 @@
   "description": "A winston@3 replacement for both winston-logstash and winston-logstash-udp to facilitate either TCP or UDP traffic to logstash",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha --exit"
+    "test": "nyc mocha --exit",
+    "build": "gulp",
+    "fix": "gulp fix",
+    "lint": "gulp lint",
+    "coverage": "nyc --reporter=lcov mocha && cat ./coverage/lcov.info | codacy-coverage",
+    "pretty": "gulp pretty"
   },
   "repository": {
     "type": "git",
