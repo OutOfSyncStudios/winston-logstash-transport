@@ -36,6 +36,8 @@ class LogstashTransport extends Transport {
     options = __.merge(defaults, options);
     super(options);
 
+    this.silent = options.silent;
+    
     // Assign all options to local properties
     __.forEach(options, (value, key) => {
       this[key] = value;

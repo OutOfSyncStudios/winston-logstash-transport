@@ -1,4 +1,4 @@
-# winston-logstash-transport
+# winston3-logstash-transport
 
 [![NPM](https://nodei.co/npm/winston3-logstash-transport.png?downloads=true)](https://nodei.co/npm/winston3-logstash-transport/)
 
