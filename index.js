@@ -1,3 +1,4 @@
+const util = require('util');
 const __ = require('@outofsync/lodash-ex');
 const Transport = require('winston-transport');
 
@@ -37,7 +38,6 @@ class LogstashTransport extends Transport {
     super(options);
 
     this.silent = options.silent;
-    
     // Assign all options to local properties
     __.forEach(options, (value, key) => {
       this[key] = value;
@@ -92,7 +92,7 @@ class LogstashTransport extends Transport {
       if (this.connectionState !== 'CONNECTED') {
         this.logQueue.push({
           message: output,
-          callback: ((err) => {
+          callback: (() => {
             this.emit('logged', info);
             callback();
             // callback(err, !err);
@@ -101,7 +101,7 @@ class LogstashTransport extends Transport {
       } else {
         setImmediate(() => {
           try {
-            this.deliver(output, (err) => {
+            this.deliver(output, () => {
               this.emit('logged', info);
               callback();
               // callback(err, !err);
@@ -186,7 +186,7 @@ class LogstashTransport extends Transport {
   }
 
   hookTCPSocketEvents() {
-    this.socket.on('error', (err) => {
+    this.socket.on('error', () => {
       this.connectionState = 'NOT CONNECTED';
 
       if (this.socket && typeof (this.socket) !== 'undefined') {
