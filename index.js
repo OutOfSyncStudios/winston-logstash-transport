@@ -29,7 +29,8 @@ class LogstashTransport extends Transport {
       label: process.title,
       trailingLineFeed: false,
       trailingLineFeedChar: os.EOL,
-      level: 'info'
+      level: 'info',
+      json: false
     };
 
     options = options || {};
@@ -44,8 +45,12 @@ class LogstashTransport extends Transport {
     });
     this.name = 'logstashTransport';
 
-    if (this.mode === 'tcp') { this.mode = 'tcp4'; }
-    if (this.mode === 'udp') { this.mode = 'udp4'; }
+    if (this.mode === 'tcp') {
+      this.mode = 'tcp4';
+    }
+    if (this.mode === 'udp') {
+      this.mode = 'udp4';
+    }
     if (this.mode.substr(3, 4) === '6' && this.host === '127.0.0.1') {
       this.host = '::0';
     }
@@ -66,37 +71,46 @@ class LogstashTransport extends Transport {
       return;
     }
 
-    if (info.message) {
-      if (typeof info.message !== 'object') {
-        const strData = info.message;
-        info.message = { data: strData };
-      }
+    if (this.json || info.message) {
+      let output;
+      if (this.json) {
+        try {
+          output = JSON.stringify(info);
+        } catch (err) {
+          output = JSON.stringify({ data: util.inspect(info) }, { depth: null });
+        }
+      } else {
+        if (typeof info.message !== 'object') {
+          const strData = info.message;
+          info.message = { data: strData };
+        }
 
-      let msg;
-      try {
-        msg = JSON.stringify(info.message);
-      } catch (err) {
-        msg = util.inspect(info.message, { depth: null });
-      }
+        let msg;
+        try {
+          msg = JSON.stringify(info.message);
+        } catch (err) {
+          msg = util.inspect(info.message, { depth: null });
+        }
 
-      const output = {
-        timestamp: new Date().toISOString(),
-        message: msg,
-        level: info.level,
-        label: this.label,
-        application: this.applicationName,
-        serverName: this.localhost,
-        pid: this.pid
-      };
+        output = JSON.stringify({
+          timestamp: new Date().toISOString(),
+          message: msg,
+          level: info.level,
+          label: this.label,
+          application: this.applicationName,
+          serverName: this.localhost,
+          pid: this.pid
+        });
+      }
 
       if (this.connectionState !== 'CONNECTED') {
         this.logQueue.push({
           message: output,
-          callback: (() => {
+          callback: () => {
             this.emit('logged', info);
             callback();
             // callback(err, !err);
-          })
+          }
         });
       } else {
         setImmediate(() => {
@@ -130,8 +144,7 @@ class LogstashTransport extends Transport {
     this.socket.send(buff, 0, buff.length, this.port, this.host, callback);
   }
 
-  deliver(message, callback) {
-    let output = JSON.stringify(message);
+  deliver(output, callback) {
     if (this.trailingLineFeed) {
       output = output.replace(/\s+$/, '') + this.trailingLineFeedChar;
     }
@@ -160,7 +173,7 @@ class LogstashTransport extends Transport {
       options.key = this.sslKey ? fs.readFileSync(this.sslKey) : null;
       options.cert = this.sslCert ? fs.readFileSync(this.sslCert) : null;
       options.passphrase = this.sslPassPhrase || null;
-      options.rejectUnauthorized = (this.rejectUnauthorized === true);
+      options.rejectUnauthorized = this.rejectUnauthorized === true;
 
       if (this.ca) {
         options.ca = [];
@@ -189,7 +202,7 @@ class LogstashTransport extends Transport {
     this.socket.on('error', () => {
       this.connectionState = 'NOT CONNECTED';
 
-      if (this.socket && typeof (this.socket) !== 'undefined') {
+      if (this.socket && typeof this.socket !== 'undefined') {
         this.socket.destroy();
       }
       this.socket = null;
@@ -241,7 +254,7 @@ class LogstashTransport extends Transport {
     this.socket = dgram.createSocket(this.mode, { sendBufferSize: 60000 });
     this.socket.on('error', (err) => {
       // Do nothing
-      if (!(/ECONNREFUSED/).test(err.message)) {
+      if (!/ECONNREFUSED/.test(err.message)) {
         console.error(err);
         // setImmediate(() => {
         //   this.emit('error', err);

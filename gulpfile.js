@@ -15,13 +15,7 @@ const devFolder = config.devFolder;
 const testFolder = config.testFolder;
 const docsFolder = config.docsFolder;
 
-const allJSFiles = [
-  '*.js',
-  `${testFolder}/**/*.js`,
-  `${testFolder}/*.js`,
-  `${devFolder}/**/*.js`,
-  `${devFolder}/*.js`
-];
+const allJSFiles = ['*.js', `${testFolder}/**/*.js`, `${testFolder}/*.js`, `${devFolder}/**/*.js`, `${devFolder}/*.js`];
 
 const esLintOpts = { configFile: '.eslintrc.json', fix: true };
 
@@ -69,6 +63,5 @@ gulp.task('docs', (done) => {
     .src(['README.md', `./${devFolder}**/*.js`, `./${config.main}`], { read: false })
     .pipe(jsdoc({ opts: { destination: docsFolder } }, done));
 });
-
 
 gulp.task('default', gulp.series('test'));
