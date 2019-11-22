@@ -1,6 +1,6 @@
 {
   "name": "winston3-logstash-transport",
-  "version": "1.0.1",
+  "version": "1.0.1b",
   "description": "A winston@3 replacement for both winston-logstash and winston-logstash-udp to facilitate either TCP or UDP traffic to logstash",
   "main": "index.js",
   "scripts": {

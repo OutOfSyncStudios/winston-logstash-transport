@@ -189,7 +189,7 @@ class LogstashTransport extends Transport {
     this.socket.on('error', () => {
       this.connectionState = 'NOT CONNECTED';
 
-      if (this.socket && typeof (this.socket) !== 'undefined') {
+      if (this.socket && (typeof this.socket !== 'undefined')) {
         this.socket.destroy();
       }
       this.socket = null;
