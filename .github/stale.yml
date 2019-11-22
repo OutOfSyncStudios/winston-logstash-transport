@@ -6,11 +6,11 @@ daysUntilStale: 365
 daysUntilClose: 14
 # Issues or Pull Requests with these labels will never be considered stale
 exemptLabels:
-  - triaged
+  - "status: triaged"
+  - "type: security"
 #  - regression
-#  - security
 # Label to use when marking as stale
-staleLabel: stale
+staleLabel: "status: stale"
 # Comment to post when marking as stale. Set to `false` to disable
 markComment: >
   Thanks for your contribution!

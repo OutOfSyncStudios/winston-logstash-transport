@@ -66,4 +66,5 @@ Create a new Logstash Transport
 <a name="license"></a>
 
 Copyright (c) 2018, 2019 Jay Reardon
+
 Copyright (c) 2019 Out of Sync Studios LLC -- Licensed under the MIT license.
