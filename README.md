@@ -3,7 +3,7 @@
 [![NPM](https://nodei.co/npm/winston3-logstash-transport.png?downloads=true)](https://nodei.co/npm/winston3-logstash-transport/)
 
 [![Actual version published on npm](http://img.shields.io/npm/v/winston3-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
-[![Travis build status](https://travis-ci.org/OutOfSyncStudios/winston-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
+[![Travis build status](https://travis-ci.com/OutOfSyncStudios/winston-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
 [![Total npm module downloads](http://img.shields.io/npm/dt/winston3-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/bdc0361233984923a764b05710a2f2f9)](https://www.codacy.com/app/OutOfSyncStudios/winston-logstash-transport?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OutOfSyncStudios/winston-logstash-transport&amp;utm_campaign=Badge_Grade)
 [![Codacy Coverate Badge](https://api.codacy.com/project/badge/Coverage/bdc0361233984923a764b05710a2f2f9)](https://www.codacy.com/app/OutOfSyncStudios/winston-logstash-transport?utm_source=github.com&utm_medium=referral&utm_content=OutOfSyncStudios/winston-logstash-transport&utm_campaign=Badge_Coverage)
@@ -61,6 +61,68 @@ Create a new Logstash Transport
 | `rejectUnauthorized` | boolean | Enable connection rejection when cert is not valid |  | `false` | ✔️ |  |
 | `trailingLineFeed` | boolean | Enable appending end of line character to UDP output |  | `false` |  | ✔️ |
 | `trailingLineFeedChar` | string | The type of end of line character(s) to append to UDP output | Any | `os.EOL` |  | ✔️ |
+| `formatted` | boolean | Enable/Disable delivery of standard pre-formatted JSON payloads. See [Message Payloads](#payloads) for more info. |  | `true` | ✔️ | ✔️ |
+
+## [Message Payloads](#payloads)
+<a name="payloads"></a>
+By default or when `options.formatted` is explicitly set `true`, this module delivers a standard message payload to logstash as follows:
+
+```js
+{
+  "timestamp": new Date().toISOString(), // The time the payload was created
+  "message": "",                         // JSON Stringified version of your message
+  "level": "",                           // The logger level of the message
+  "label": `${options.label}`,
+  "application": `${options.applicationName}`,
+  "serverName": `${options.localhost}`,
+  "pid": `${options.pid}`
+}
+```
+
+In this case when the log message is a string, boolean, or Number value, then the message is a stringified as:
+```js
+{
+  "data": `${message}`
+}
+```
+
+If `options.formatted` is set to `false`, then the entire Winston log message object is `JSON.stringified` and then set to logstash.
+
+## Logstash Configuration
+Having logstash ingest preformatted messages delivered by this module can be done with a configuration file similar to below:
+```conf
+input {
+  # Sample input over TCP
+  tcp {
+    codec => json
+    port => 28777
+    add_field => { "category" => "winston_log" }
+  }
+}
+filter {
+  if [category] == "winston_log" {
+    json {
+      source => "message"
+    }
+    json {
+      source => "data"
+      remove_field => [ "[headers][secret]", "[headers][apikey]" ]
+    }
+  }
+}
+output {
+  if [category] == "winston_log" {
+    stdout {
+      codec => json
+    }
+    elasticsearch {
+      id => "winston_log_tcp"
+      index => "winston_log-%{+YYYY.MM.dd}"
+      hosts => ["192.168.1.1:9200"] # Use the address of your Elasticsearch server
+    }
+  }
+}
+```
 
 ## [License](#license)
 <a name="license"></a>

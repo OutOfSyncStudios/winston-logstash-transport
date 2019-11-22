@@ -29,7 +29,8 @@ class LogstashTransport extends Transport {
       label: process.title,
       trailingLineFeed: false,
       trailingLineFeedChar: os.EOL,
-      level: 'info'
+      level: 'info',
+      formatted: true
     };
 
     options = options || {};
@@ -60,6 +61,21 @@ class LogstashTransport extends Transport {
     this.connect();
   }
 
+  tryStringify(data) {
+    let msg;
+    // when options.formatted is false this will always be skipped
+    if (typeof data !== 'object') {
+      const strData = data;
+      data = { data: strData };
+    }
+    try {
+      msg = JSON.stringify(data);
+    } catch (err) {
+      msg = util.inspect(data, { depth: null });
+    }
+    return msg;
+  }
+
   log(info, callback) {
     if (this.silent) {
       callback(null, true);
@@ -67,27 +83,21 @@ class LogstashTransport extends Transport {
     }
 
     if (info.message) {
-      if (typeof info.message !== 'object') {
-        const strData = info.message;
-        info.message = { data: strData };
+      let output;
+      if (!this.formatted) {
+        output = this.tryStringify(info);
+      } else {
+        const msg = this.tryStringify(info.message);
+        output = JSON.stringify({
+          timestamp: new Date().toISOString(),
+          message: msg,
+          level: info.level,
+          label: this.label,
+          application: this.applicationName,
+          serverName: this.localhost,
+          pid: this.pid
+        });
       }
-
-      let msg;
-      try {
-        msg = JSON.stringify(info.message);
-      } catch (err) {
-        msg = util.inspect(info.message, { depth: null });
-      }
-
-      const output = {
-        timestamp: new Date().toISOString(),
-        message: msg,
-        level: info.level,
-        label: this.label,
-        application: this.applicationName,
-        serverName: this.localhost,
-        pid: this.pid
-      };
 
       if (this.connectionState !== 'CONNECTED') {
         this.logQueue.push({
@@ -131,20 +141,19 @@ class LogstashTransport extends Transport {
   }
 
   deliver(message, callback) {
-    let output = JSON.stringify(message);
     if (this.trailingLineFeed) {
-      output = output.replace(/\s+$/, '') + this.trailingLineFeedChar;
+      message = message.replace(/\s+$/, '') + this.trailingLineFeedChar;
     }
     switch (this.socketmode) {
       case 'tcp6':
       case 'tcp4': {
-        this.deliverTCP(output, callback);
+        this.deliverTCP(message, callback);
         break;
       }
       case 'udp6':
       case 'udp4':
       default: {
-        this.deliverUDP(output, callback);
+        this.deliverUDP(message, callback);
         break;
       }
     }
