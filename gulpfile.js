@@ -70,5 +70,4 @@ gulp.task('docs', (done) => {
     .pipe(jsdoc({ opts: { destination: docsFolder } }, done));
 });
 
-
 gulp.task('default', gulp.series('test'));
