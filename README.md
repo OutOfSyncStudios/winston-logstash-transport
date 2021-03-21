@@ -129,4 +129,4 @@ output {
 
 Copyright (c) 2018, 2019 Jay Reardon
 
-Copyright (c) 2019 Out of Sync Studios LLC -- Licensed under the MIT license.
+Copyright (c) 2019-2021 Out of Sync Studios LLC -- Licensed under the MIT license.
