@@ -1,5 +1,6 @@
 const util = require('util');
-const __ = require('@outofsync/lodash-ex');
+const forEach = require('lodash.foreach');
+const merge = require('lodash.merge');
 const Transport = require('winston-transport');
 
 const os = require('os');
@@ -35,12 +36,12 @@ class LogstashTransport extends Transport {
 
     options = options || {};
     options.applicationName = options.applicationName || options.appName || process.title;
-    options = __.merge(defaults, options);
+    options = merge(defaults, options);
     super(options);
 
     this.silent = options.silent;
     // Assign all options to local properties
-    __.forEach(options, (value, key) => {
+    forEach(options, (value, key) => {
       this[key] = value;
     });
     this.name = 'logstashTransport';
@@ -173,7 +174,7 @@ class LogstashTransport extends Transport {
 
       if (this.ca) {
         options.ca = [];
-        __.forEach(this.ca, (value) => {
+        forEach(this.ca, (value) => {
           options.ca.push(fs.readFileSync(value));
         });
       }
