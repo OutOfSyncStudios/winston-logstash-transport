@@ -3,7 +3,6 @@
 [![NPM](https://nodei.co/npm/winston3-logstash-transport.png?downloads=true)](https://nodei.co/npm/winston3-logstash-transport/)
 
 [![Actual version published on npm](http://img.shields.io/npm/v/winston3-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
-[![Travis build status](https://travis-ci.com/OutOfSyncStudios/winston-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
 [![Total npm module downloads](http://img.shields.io/npm/dt/winston3-logstash-transport.svg)](https://www.npmjs.org/package/winston3-logstash-transport)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/bdc0361233984923a764b05710a2f2f9)](https://www.codacy.com/app/OutOfSyncStudios/winston-logstash-transport?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=OutOfSyncStudios/winston-logstash-transport&amp;utm_campaign=Badge_Grade)
 [![Codacy Coverate Badge](https://api.codacy.com/project/badge/Coverage/bdc0361233984923a764b05710a2f2f9)](https://www.codacy.com/app/OutOfSyncStudios/winston-logstash-transport?utm_source=github.com&utm_medium=referral&utm_content=OutOfSyncStudios/winston-logstash-transport&utm_campaign=Badge_Coverage)
