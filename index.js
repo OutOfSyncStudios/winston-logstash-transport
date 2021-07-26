@@ -57,7 +57,7 @@ class LogstashTransport extends Transport {
     this.connectionState = 'NOT CONNECTED';
     this.socketmode = null;
     this.socket = null;
-    this.retries = -1;
+    this.retries = 0;
 
     this.connect();
   }
@@ -241,6 +241,7 @@ class LogstashTransport extends Transport {
         // });
       } else if (this.connectionState !== 'CONNECTING') {
         setTimeout(() => {
+          this.retries++;
           this.connect();
         }, this.timeoutConnectRetries);
       }
