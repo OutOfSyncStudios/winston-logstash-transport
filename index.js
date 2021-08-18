@@ -83,45 +83,43 @@ class LogstashTransport extends Transport {
       return;
     }
 
-    if (info.message) {
-      let output;
-      if (!this.formatted) {
-        output = this.tryStringify(info);
-      } else {
-        const msg = this.tryStringify(info.message);
-        output = JSON.stringify({
-          timestamp: new Date().toISOString(),
-          message: msg,
-          level: info.level,
-          label: this.label,
-          application: this.applicationName,
-          serverName: this.localhost,
-          pid: this.pid
-        });
-      }
+    let output;
+    if (!this.formatted) {
+      output = this.tryStringify(info);
+    } else {
+      const msg = this.tryStringify(info.message);
+      output = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        message: msg,
+        level: info.level,
+        label: this.label,
+        application: this.applicationName,
+        serverName: this.localhost,
+        pid: this.pid
+      });
+    }
 
-      if (this.connectionState !== 'CONNECTED') {
-        this.logQueue.push({
-          message: output,
-          callback: (() => {
+    if (this.connectionState !== 'CONNECTED') {
+      this.logQueue.push({
+        message: output,
+        callback: (() => {
+          this.emit('logged', info);
+          callback();
+          // callback(err, !err);
+        })
+      });
+    } else {
+      setImmediate(() => {
+        try {
+          this.deliver(output, () => {
             this.emit('logged', info);
             callback();
             // callback(err, !err);
-          })
-        });
-      } else {
-        setImmediate(() => {
-          try {
-            this.deliver(output, () => {
-              this.emit('logged', info);
-              callback();
-              // callback(err, !err);
-            });
-          } catch (err) {
-            callback();
-          }
-        });
-      }
+          });
+        } catch (err) {
+          callback();
+        }
+      });
     }
 
     return;
